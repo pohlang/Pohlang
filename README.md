@@ -345,5 +345,7 @@ cargo test --manifest-path runtime/Cargo.toml
 cargo run --manifest-path runtime/Cargo.toml -- --run examples/poh/hello.poh
 ```
 
+For OS-specific build, test, debug, and release tips see doc/CROSS_PLATFORM_DEV.md.
+
 ## License
 MIT

@@ -1,87 +1,108 @@
-# PohLang Installation Script for Windows
-# Usage: Run this in PowerShell (as Administrator for system-wide install)
-#        Or run as normal user for current user install
+[CmdletBinding()]
+param()
 
-$VERSION = "v0.5.2"
-$REPO = "AlhaqGH/PohLang"
-$PLATFORM = "windows-x64"
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
 
-Write-Host "🚀 Installing PohLang $VERSION for Windows..." -ForegroundColor Cyan
-Write-Host ""
+$Repo = 'AlhaqGH/PohLang'
+$DefaultVersion = 'v0.6.7'
+$BinName = 'pohlang.exe'
 
-# Create temp directory
-$TempDir = Join-Path $env:TEMP "pohlang-install"
+function Write-Info([string] $Message) { Write-Host $Message -ForegroundColor Cyan }
+function Write-Success([string] $Message) { Write-Host $Message -ForegroundColor Green }
+function Write-Warn([string] $Message) { Write-Host $Message -ForegroundColor Yellow }
+
+$version = $env:POHLANG_VERSION
+if (-not [string]::IsNullOrWhiteSpace($version)) {
+    if ($version -notmatch '^v') { $version = "v$version" }
+} else {
+    try {
+        $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/latest" -UseBasicParsing
+        $version = $release.tag_name
+        if (-not $version) { throw 'missing tag_name' }
+    } catch {
+        Write-Warn "Could not determine the latest release automatically. Falling back to $DefaultVersion."
+        $version = $DefaultVersion
+    }
+}
+
+if ($version -notmatch '^v') { $version = "v$version" }
+
+$arch = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture
+switch ($arch) {
+    'X64'   { $platform = 'windows-x64' }
+    'Arm64' {
+        Write-Warn 'Prebuilt Windows ARM64 binaries are not available yet. Build from source instead.'
+        return
+    }
+    default { throw "Unsupported architecture: $arch" }
+}
+
+$assetName = "pohlang-$version-$platform.zip"
+$downloadUrl = "https://github.com/$Repo/releases/download/$version/$assetName"
+
+$TempDir = Join-Path ([System.IO.Path]::GetTempPath()) "pohlang-install-$(Get-Random)"
 New-Item -ItemType Directory -Force -Path $TempDir | Out-Null
-Set-Location $TempDir
 
-# Download
-$DownloadUrl = "https://github.com/$REPO/releases/download/$VERSION/pohlang-$VERSION-$PLATFORM.zip"
-$ZipPath = Join-Path $TempDir "pohlang.zip"
-
-Write-Host "📥 Downloading from $DownloadUrl..." -ForegroundColor Yellow
 try {
-    Invoke-WebRequest -Uri $DownloadUrl -OutFile $ZipPath -UseBasicParsing
-} catch {
-    Write-Host "❌ Download failed: $_" -ForegroundColor Red
-    exit 1
+    $zipPath = Join-Path $TempDir 'pohlang.zip'
+    Write-Info "Downloading $assetName..."
+    Invoke-WebRequest -Uri $downloadUrl -OutFile $zipPath -UseBasicParsing
+
+    Write-Info 'Extracting package...'
+    $extractDir = Join-Path $TempDir 'extracted'
+    Expand-Archive -Path $zipPath -DestinationPath $extractDir -Force
+
+    $binaryPath = Join-Path $extractDir $BinName
+    if (-not (Test-Path $binaryPath)) {
+        throw "Downloaded archive did not contain $BinName"
+    }
+
+    $customInstall = $env:POHLANG_INSTALL_DIR
+    if (-not [string]::IsNullOrWhiteSpace($customInstall)) {
+        $installDir = $customInstall
+    } else {
+        $principal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
+        if ($principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+            $installDir = 'C:\Program Files\PohLang'
+        } else {
+            $installDir = Join-Path $env:LOCALAPPDATA 'PohLang'
+        }
+    }
+
+    if (-not (Test-Path $installDir)) {
+        Write-Info "Creating $installDir..."
+        New-Item -ItemType Directory -Force -Path $installDir | Out-Null
+    }
+
+    $targetPath = Join-Path $installDir $BinName
+    Write-Info "Installing to $targetPath..."
+    Copy-Item -Path $binaryPath -Destination $targetPath -Force
+
+    $currentPath = [Environment]::GetEnvironmentVariable('Path', 'User')
+    if (-not $currentPath) { $currentPath = '' }
+    if ($currentPath -notlike "*$installDir*") {
+        Write-Info "Adding $installDir to the user PATH..."
+        $newPath = if ($currentPath) { "$currentPath;$installDir" } else { $installDir }
+        [Environment]::SetEnvironmentVariable('Path', $newPath, 'User')
+    }
+
+    Write-Success 'PohLang installed successfully.'
+    Write-Host "Binary location: $targetPath" -ForegroundColor Gray
+
+    try {
+        & $targetPath --version | Write-Host
+    } catch {
+        Write-Warn 'Unable to run pohlang --version automatically. Open a new terminal and try again.'
+    }
+
+    Write-Info 'Next steps:'
+    Write-Host '  1. Open a new PowerShell window (to refresh PATH).' -ForegroundColor Gray
+    Write-Host '  2. Run: pohlang --version' -ForegroundColor Gray
+    Write-Host '  3. Visit https://github.com/AlhaqGH/PohLang for documentation.' -ForegroundColor Gray
 }
-
-# Extract
-Write-Host "📦 Extracting..." -ForegroundColor Yellow
-Expand-Archive -Path $ZipPath -DestinationPath $TempDir -Force
-
-# Determine install location
-$IsAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-
-if ($IsAdmin) {
-    # System-wide installation
-    $InstallDir = "C:\Program Files\PohLang"
-    Write-Host "📋 Installing to $InstallDir (system-wide)..." -ForegroundColor Yellow
-} else {
-    # User installation
-    $InstallDir = Join-Path $env:LOCALAPPDATA "PohLang"
-    Write-Host "📋 Installing to $InstallDir (current user)..." -ForegroundColor Yellow
+finally {
+    if (Test-Path $TempDir) {
+        Remove-Item -Path $TempDir -Recurse -Force
+    }
 }
-
-# Create install directory and copy binary
-New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
-Copy-Item -Path "pohlang.exe" -Destination $InstallDir -Force
-
-# Add to PATH
-$PathScope = if ($IsAdmin) { "Machine" } else { "User" }
-$CurrentPath = [Environment]::GetEnvironmentVariable("Path", $PathScope)
-
-if ($CurrentPath -notlike "*$InstallDir*") {
-    Write-Host "🔧 Adding to PATH..." -ForegroundColor Yellow
-    $NewPath = "$CurrentPath;$InstallDir"
-    [Environment]::SetEnvironmentVariable("Path", $NewPath, $PathScope)
-    $env:Path = [Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [Environment]::GetEnvironmentVariable("Path", "User")
-}
-
-# Verify installation
-$PohlangPath = Join-Path $InstallDir "pohlang.exe"
-if (Test-Path $PohlangPath) {
-    Write-Host ""
-    Write-Host "✅ PohLang installed successfully!" -ForegroundColor Green
-    Write-Host ""
-    Write-Host "Try it out:" -ForegroundColor Cyan
-    Write-Host "  pohlang --version"
-    Write-Host ""
-    Write-Host "Create a test program:" -ForegroundColor Cyan
-    Write-Host "  echo 'Start Program' > hello.poh"
-    Write-Host "  echo 'Write `"Hello from PohLang!`"' >> hello.poh"
-    Write-Host "  echo 'End Program' >> hello.poh"
-    Write-Host "  pohlang --run hello.poh"
-    Write-Host ""
-    Write-Host "📚 Documentation: https://github.com/$REPO" -ForegroundColor Cyan
-    Write-Host ""
-    Write-Host "⚠️  Note: You may need to restart your terminal for PATH changes to take effect." -ForegroundColor Yellow
-} else {
-    Write-Host "❌ Installation failed. Please install manually from:" -ForegroundColor Red
-    Write-Host "   https://github.com/$REPO/releases"
-    exit 1
-}
-
-# Cleanup
-Set-Location $env:USERPROFILE
-Remove-Item -Path $TempDir -Recurse -Force

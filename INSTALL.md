@@ -1,191 +1,86 @@
 # PohLang Installation Guide
 
-**✅ No Rust, Visual Studio, or Build Tools Required!**
-
-PohLang is distributed as a standalone binary. Just download and run!
-
-🎮 **Try First**: [PohLang Playground](https://pohlang-playground.pages.dev) - Test PohLang in your browser before installing!
-
----
+PohLang ships as self-contained binaries for Windows, Linux, and macOS (both Intel and Apple Silicon). The official install scripts now fetch the latest published release automatically and take care of placing the binary on your system.
 
 ## Quick Install (Recommended)
 
-### Windows
-
-#### One-Line Install (PowerShell)
+### Windows (PowerShell)
 ```powershell
 irm https://raw.githubusercontent.com/AlhaqGH/PohLang/main/install/install.ps1 | iex
 ```
+> Tip: set `$env:POHLANG_VERSION='v0.6.7'` (or any tag) to install a specific release. Use `$env:POHLANG_INSTALL_DIR='C:\Tools\PohLang'` to override the destination before running the script.
 
-Or download manually:
-1. Download [pohlang-v0.5.2-windows-x64.zip](https://github.com/AlhaqGH/PohLang/releases/latest)
-2. Extract the zip file
-3. Run `pohlang.exe`
-
-### Linux
-
-#### One-Line Install
+### Linux / macOS (bash)
 ```bash
 curl -sSL https://raw.githubusercontent.com/AlhaqGH/PohLang/main/install/install.sh | bash
 ```
+> Tip: export `POHLANG_VERSION=v0.6.7` or `POHLANG_INSTALL_DIR=$HOME/.local/bin` before running the installer to customise version or install location.
 
-Or install manually:
-```bash
-wget https://github.com/AlhaqGH/PohLang/releases/download/v0.5.2/pohlang-v0.5.2-linux-x64.tar.gz
-tar -xzf pohlang-v0.5.2-linux-x64.tar.gz
-sudo mv pohlang /usr/local/bin/
-```
+## Manual Downloads
 
-### macOS
+Grab binaries directly from the [GitHub releases](https://github.com/AlhaqGH/PohLang/releases) page. Asset names follow the pattern `pohlang-<tag>-<platform>.<ext>`.
 
-#### One-Line Install
-```bash
-curl -sSL https://raw.githubusercontent.com/AlhaqGH/PohLang/main/install/install.sh | bash
-```
+| Platform              | Asset extension | Example asset                          |
+|-----------------------|-----------------|----------------------------------------|
+| Windows x64           | `.zip`          | `pohlang-v0.6.7-windows-x64.zip`       |
+| Linux x64             | `.tar.gz`       | `pohlang-v0.6.7-linux-x64.tar.gz`      |
+| macOS Intel (x64)     | `.tar.gz`       | `pohlang-v0.6.7-macos-x64.tar.gz`      |
+| macOS Apple Silicon   | `.tar.gz`       | `pohlang-v0.6.7-macos-arm64.tar.gz`    |
 
-Or install manually:
-```bash
-curl -L https://github.com/AlhaqGH/PohLang/releases/download/v0.5.2/pohlang-v0.5.2-macos-x64.tar.gz -o pohlang.tar.gz
-tar -xzf pohlang.tar.gz
-sudo mv pohlang /usr/local/bin/
-```
+After downloading, extract the archive and move the `pohlang` binary somewhere on your `PATH` (for example `/usr/local/bin` on Unix-like systems or `C:\Program Files\PohLang` on Windows).
 
----
+## Environment Overrides
 
-## SDK Package (Includes Examples & Docs)
+The installers recognise two optional environment variables:
 
-If you want a complete package with examples and documentation:
+- `POHLANG_VERSION` - install a specific tagged release (for example `v0.6.6`).
+- `POHLANG_INSTALL_DIR` - choose a custom install directory.
 
-### Windows
-```powershell
-# Download SDK
-Invoke-WebRequest -Uri "https://github.com/AlhaqGH/PohLang/releases/download/v0.5.2/pohlang-sdk-v0.5.2-windows-x64.zip" -OutFile pohlang-sdk.zip
-Expand-Archive -Path pohlang-sdk.zip -DestinationPath "C:\PohLang"
-cd C:\PohLang\pohlang-sdk-*
-```
-
-### Linux
-```bash
-wget https://github.com/AlhaqGH/PohLang/releases/download/v0.5.2/pohlang-sdk-v0.5.2-linux-x64.tar.gz
-tar -xzf pohlang-sdk-v0.5.2-linux-x64.tar.gz
-cd pohlang-sdk-*
-./bin/pohlang --run examples/hello.poh
-```
-
-### macOS
-```bash
-curl -L https://github.com/AlhaqGH/PohLang/releases/download/v0.5.2/pohlang-sdk-v0.5.2-macos-x64.tar.gz -o sdk.tar.gz
-tar -xzf sdk.tar.gz
-cd pohlang-sdk-*
-./bin/pohlang --run examples/hello.poh
-```
-
----
+If unset, the scripts install the most recent release into `/usr/local/bin` (Linux/macOS) or `C:\Program Files\PohLang` / `%LOCALAPPDATA%\PohLang` (Windows, depending on privileges).
 
 ## Verify Installation
 
-After installation, test it:
-
 ```bash
-# Check version
 pohlang --version
 
-# Run a quick test
 echo 'Start Program
 Write "Hello from PohLang!"
-End Program' > test.poh
-
-pohlang --run test.poh
+End Program' > hello.poh
+pohlang --run hello.poh
 ```
-
----
 
 ## VS Code Extension (Optional)
 
-For the best development experience, install the VS Code extension:
+1. Install [Visual Studio Code](https://code.visualstudio.com/).
+2. Search for **PohLang Hub** in the marketplace and install it.
+3. Open any `.poh` file and press `Ctrl+F5` to run.
 
-1. Install [Visual Studio Code](https://code.visualstudio.com/)
-2. Search for "PohLang Hub" in the Extensions marketplace
-3. Install the extension
-4. Open any `.poh` file and press `Ctrl+F5` to run
-
-Extension includes:
-- ✅ Syntax highlighting
-- ✅ IntelliSense & code completion
-- ✅ 40+ code snippets
-- ✅ Integrated runtime
-- ✅ One-click execution
-
----
+The extension bundles the runtime, provides IntelliSense, snippets, and works offline once installed.
 
 ## Uninstallation
 
 ### Windows
-```powershell
-# If installed with script
-Remove-Item "$env:LOCALAPPDATA\PohLang" -Recurse -Force
-# Or if installed system-wide (as admin)
-Remove-Item "C:\Program Files\PohLang" -Recurse -Force
-
-# Remove from PATH manually in System Environment Variables
-```
+Remove the install directory (`%LOCALAPPDATA%\PohLang` for user installs or `C:\Program Files\PohLang` for system installs) and delete the PATH entry if you added one manually.
 
 ### Linux/macOS
-```bash
-sudo rm /usr/local/bin/pohlang
-```
+Delete the installed binary (default `/usr/local/bin/pohlang`) and remove any optional install directory you configured.
 
----
+## Building from Source
 
-## Building from Source (For Developers)
-
-If you want to contribute or modify PohLang:
-
-1. Install [Rust](https://rustup.rs/)
-2. Clone the repository:
-   ```bash
-   git clone https://github.com/AlhaqGH/PohLang.git
-   cd PohLang
-   ```
-3. Build:
+1. Install [Rust](https://rustup.rs/).
+2. Clone the repository: `git clone https://github.com/AlhaqGH/PohLang.git`.
+3. Build and test:
    ```bash
    cargo build --release --manifest-path runtime/Cargo.toml
+   cargo test --manifest-path runtime/Cargo.toml
    ```
-4. Binary will be at `runtime/target/release/pohlang`
+4. The binary is written to `runtime/target/release/pohlang` (or the target-specific directory when cross-compiling).
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for more details.
-
----
+For detailed cross-platform build, test, debug, and release workflows see `doc/CROSS_PLATFORM_DEV.md`.
 
 ## Troubleshooting
 
-### Windows: "pohlang is not recognized"
-- Restart your terminal after installation
-- Or add the install directory to PATH manually
-
-### Linux/macOS: "Permission denied"
-```bash
-chmod +x pohlang
-```
-
-### macOS: "pohlang cannot be opened because it is from an unidentified developer"
-```bash
-xattr -d com.apple.quarantine pohlang
-```
-
-Or: System Preferences → Security & Privacy → Click "Open Anyway"
-
-### Need More Help?
-- [GitHub Issues](https://github.com/AlhaqGH/PohLang/issues)
-- [Discussions](https://github.com/AlhaqGH/PohLang/discussions)
-
----
-
-## What's Next?
-
-1. **Learn the basics**: Read [PohLang_Guide.md](doc/PohLang_Guide.md)
-2. **Try examples**: Explore the [examples/poh](examples/poh) folder
-3. **Build something**: Create your first program!
-4. **Join the community**: Share your projects on GitHub Discussions
-
-**Happy coding with PohLang!** 🎉
+- **Binary not found after install** - ensure the install directory is on your `PATH`, then open a new shell.
+- **Permission denied** - run the installer with `sudo` (Linux/macOS) or an elevated PowerShell window (Windows) if installing to a system directory.
+- **macOS Gatekeeper warning** - run `xattr -d com.apple.quarantine /path/to/pohlang` or allow the binary via System Settings -> Privacy & Security.
+- **Need older versions** - set `POHLANG_VERSION` before running the install scripts or download the desired archive from the releases page.

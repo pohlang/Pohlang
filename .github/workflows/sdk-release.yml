@@ -25,13 +25,28 @@ jobs:
           - os: ubuntu-latest
             binary: pohlang
             platform: linux-x64
+            rust_targets: ''
+            cargo_build_flags: ''
+            artifact_dir: target/release
           - os: windows-latest
             binary: pohlang.exe
             platform: windows-x64
-          - os: macos-latest
+            rust_targets: 'x86_64-pc-windows-msvc'
+            cargo_build_flags: ''
+            artifact_dir: target/release
+          - os: macos-13
             binary: pohlang
             platform: macos-x64
-    
+            rust_targets: 'x86_64-apple-darwin'
+            cargo_build_flags: '--target x86_64-apple-darwin'
+            artifact_dir: target/x86_64-apple-darwin/release
+          - os: macos-14
+            binary: pohlang
+            platform: macos-arm64
+            rust_targets: 'aarch64-apple-darwin'
+            cargo_build_flags: '--target aarch64-apple-darwin'
+            artifact_dir: target/aarch64-apple-darwin/release
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -48,10 +63,12 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust_targets }}
 
       - name: Build
         working-directory: runtime
-        run: cargo build --release --verbose
+        run: cargo build --release --verbose ${{ matrix.cargo_build_flags }}
 
       - name: Prepare SDK structure
         shell: bash
@@ -67,11 +84,11 @@ jobs:
           mkdir -p "${SDK_DIR}/docs/guide"
           
           # Copy runtime binary
-          cp runtime/target/release/${{ matrix.binary }} "${SDK_DIR}/bin/"
+          cp runtime/${{ matrix.artifact_dir }}/${{ matrix.binary }} "${SDK_DIR}/bin/"
           
           # Copy library (for embedding)
-          if [ -f runtime/target/release/libpohlang_runtime.* ]; then
-            cp runtime/target/release/libpohlang_runtime.* "${SDK_DIR}/lib/" || true
+          if [ -f runtime/${{ matrix.artifact_dir }}/libpohlang_runtime.* ]; then
+            cp runtime/${{ matrix.artifact_dir }}/libpohlang_runtime.* "${SDK_DIR}/lib/" || true
           fi
           
           # Copy examples

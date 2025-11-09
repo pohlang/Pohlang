@@ -39,6 +39,7 @@ End-to-end pipeline:
 
 6) Build and run tests
 - Use `cargo test --manifest-path runtime/Cargo.toml` to validate.
+- See `doc/CROSS_PLATFORM_DEV.md` for platform-specific build/test/debug notes.
 
 ## Coding style
 - Keep parsing ASCII case-insensitive for phrases.
